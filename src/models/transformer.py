@@ -45,13 +45,10 @@ class TransformerModel(nn.Module):
         self.output_size = output_size
         self.use_batch_norm = use_batch_norm
         
-        # Input projection
         self.input_projection = nn.Linear(input_size, d_model)
         
-        # Positional encoding
         self.pos_encoder = PositionalEncoding(d_model, max_seq_len)
         
-        # Transformer encoder
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
@@ -61,41 +58,30 @@ class TransformerModel(nn.Module):
         )
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         
-        # Batch normalization
         if use_batch_norm:
             self.batch_norm = nn.BatchNorm1d(d_model)
         
-        # Dropout
         self.dropout = nn.Dropout(dropout)
         
-        # Output layer
         self.fc = nn.Linear(d_model, output_size)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
       
-        # Project input to d_model
-        x = self.input_projection(x)  # (batch_size, seq_len, d_model)
+        x = self.input_projection(x)
         
-        # Transpose for transformer (seq_len, batch_size, d_model)
         x = x.transpose(0, 1)
         
-        # Add positional encoding
         x = self.pos_encoder(x)
         
-        # Transformer encoder
-        x = self.transformer_encoder(x)  # (seq_len, batch_size, d_model)
+        x = self.transformer_encoder(x)
         
-        # Take the last output
-        x = x[-1, :, :]  # (batch_size, d_model)
+        x = x[-1, :, :]
         
-        # Batch normalization
         if self.use_batch_norm:
             x = self.batch_norm(x)
         
-        # Dropout
         x = self.dropout(x)
         
-        # Output layer
         x = self.fc(x)
         
         return x

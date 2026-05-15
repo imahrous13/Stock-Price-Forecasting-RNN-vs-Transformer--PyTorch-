@@ -1,12 +1,3 @@
-"""Streamlit GUI for the Deep Learning final project.
-
-The GUI lets the user:
-    - Load a stock-price dataset (cached CSV or via yfinance)
-    - Train the two project models: Vanilla RNN and Transformer
-    - Compare the two models with metrics and plots
-    - Run interactive predictions with a trained model
-"""
-
 import os
 import sys
 from datetime import datetime, timedelta
@@ -15,17 +6,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
-# Make the repository's `src` importable when running `streamlit run gui/app.py`
 current_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
 parent_dir = os.path.dirname(current_dir) if current_dir.endswith('gui') else current_dir
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.data_loader import StockDataLoader
-from src.models import VanillaRNN, TransformerModel  # noqa: F401 (re-exported for clarity)
 from src.pipeline import Pipeline, SUPPORTED_MODELS
 
-# ---------- Page configuration ----------
 st.set_page_config(
     page_title="Stock Price Prediction - RNN vs Transformer",
     layout="wide",
@@ -38,7 +26,6 @@ st.markdown(
     "compare them, and run interactive predictions."
 )
 
-# ---------- Session state ----------
 if 'pipeline' not in st.session_state:
     st.session_state.pipeline = None
 if 'data' not in st.session_state:
@@ -46,14 +33,10 @@ if 'data' not in st.session_state:
 if 'preprocessor' not in st.session_state:
     st.session_state.preprocessor = None
 
-# ---------- Tabs ----------
 tab_data, tab_train, tab_predict, tab_results = st.tabs(
     ["Data", "Train Models", "Predict", "Comparison"]
 )
 
-# =====================================================================
-# Tab 1: Data loading
-# =====================================================================
 with tab_data:
     st.header("1. Load stock data")
 
@@ -124,9 +107,6 @@ with tab_data:
             except Exception as exc:
                 st.error(f"Error loading data: {exc}")
 
-# =====================================================================
-# Tab 2: Model training (RNN and/or Transformer)
-# =====================================================================
 with tab_train:
     st.header("2. Train RNN and Transformer")
 
@@ -228,9 +208,6 @@ with tab_train:
                     import traceback
                     st.code(traceback.format_exc())
 
-# =====================================================================
-# Tab 3: Prediction (only RNN / Transformer)
-# =====================================================================
 with tab_predict:
     st.header("3. Make predictions")
 
@@ -339,9 +316,6 @@ with tab_predict:
                     import traceback
                     st.code(traceback.format_exc())
 
-# =====================================================================
-# Tab 4: Comparison (RNN vs Transformer only)
-# =====================================================================
 with tab_results:
     st.header("4. RNN vs Transformer comparison")
 

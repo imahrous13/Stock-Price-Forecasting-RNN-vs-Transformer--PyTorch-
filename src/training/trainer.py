@@ -34,14 +34,12 @@ class Trainer:
         self.weight_decay = weight_decay
         self.gradient_clip = gradient_clip
         
-        # Optimizer
         self.optimizer = optim.Adam(
             self.model.parameters(),
             lr=learning_rate,
             weight_decay=weight_decay
         )
         
-        # Learning rate scheduler
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer,
             mode='min',
@@ -49,16 +47,13 @@ class Trainer:
             patience=scheduler_patience
         )
         
-        # Early stopping
         self.early_stopping = EarlyStopping(
             patience=early_stopping_patience,
             min_delta=early_stopping_min_delta
         )
         
-        # Loss function (MSE for regression)
         self.criterion = nn.MSELoss()
         
-        # Training history
         self.history = {
             'train_loss': [],
             'val_loss': [],
@@ -75,26 +70,20 @@ class Trainer:
             batch_x = batch_x.to(self.device)
             batch_y = batch_y.to(self.device)
             
-            # Forward pass
             self.optimizer.zero_grad()
             outputs = self.model(batch_x)
             
-            # Handle different output shapes
             if outputs.shape != batch_y.shape:
                 if outputs.dim() == 2 and batch_y.dim() == 2:
                     if outputs.shape[1] == 1 and batch_y.shape[1] > 1:
-                        # Expand output to match target
                         outputs = outputs.repeat(1, batch_y.shape[1])
                     elif outputs.shape[1] > 1 and batch_y.shape[1] == 1:
-                        # Take first output
                         outputs = outputs[:, 0:1]
             
             loss = self.criterion(outputs, batch_y)
             
-            # Backward pass
             loss.backward()
             
-            # Gradient clipping
             if self.gradient_clip > 0:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.gradient_clip)
             
@@ -118,7 +107,6 @@ class Trainer:
                 
                 outputs = self.model(batch_x)
                 
-                # Handle different output shapes
                 if outputs.shape != batch_y.shape:
                     if outputs.dim() == 2 and batch_y.dim() == 2:
                         if outputs.shape[1] == 1 and batch_y.shape[1] > 1:
@@ -149,34 +137,27 @@ class Trainer:
         prev_lr = self.optimizer.param_groups[0]['lr']
         
         for epoch in range(num_epochs):
-            # Train
             train_loss = self.train_epoch(train_loader)
             
-            # Validate
             val_loss = self.validate(val_loader)
             
-            # Update learning rate
             self.scheduler.step(val_loss)
             current_lr = self.optimizer.param_groups[0]['lr']
             
-            # Check if learning rate changed
             if verbose and current_lr != prev_lr:
                 print(f"Learning rate reduced from {prev_lr:.6f} to {current_lr:.6f}")
             prev_lr = current_lr
             
-            # Record history
             self.history['train_loss'].append(train_loss)
             self.history['val_loss'].append(val_loss)
             self.history['learning_rate'].append(current_lr)
             
-            # Print progress
             if verbose:
                 print(f"Epoch {epoch+1}/{num_epochs} - "
                       f"Train Loss: {train_loss:.6f}, "
                       f"Val Loss: {val_loss:.6f}, "
                       f"LR: {current_lr:.6f}")
             
-            # Early stopping
             if self.early_stopping(val_loss, self.model):
                 if verbose:
                     print(f"Training stopped early at epoch {epoch+1}")
@@ -216,7 +197,6 @@ class Trainer:
         print(f"Model saved to {filepath}")
     
     def load_model(self, filepath: str):
-        """Load the model from disk."""
         checkpoint = torch.load(filepath, map_location=self.device)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

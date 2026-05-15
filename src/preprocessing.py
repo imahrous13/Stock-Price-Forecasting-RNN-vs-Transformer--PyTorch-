@@ -31,13 +31,10 @@ class Preprocessor:
     def _handle_missing_values(self, data: pd.DataFrame) -> pd.DataFrame:
         df = data.copy()
         
-        # Forward fill for missing values
         df = df.ffill()
         
-        # If still missing, backward fill
         df = df.bfill()
         
-        # If still missing, drop rows
         df = df.dropna()
         
         return df
@@ -67,20 +64,16 @@ class Preprocessor:
        
         df = data.copy()
         
-        # Handle missing values and outliers
         df = self._handle_missing_values(df)
         df = self._handle_outliers(df)
         
-        # Determine feature columns
         if self.features is None:
-            # Use all numeric columns except Date and target
             exclude_cols = ['Date', self.target_col] if 'Date' in df.columns else [self.target_col]
             self.feature_columns = [col for col in df.select_dtypes(include=[np.number]).columns 
                                   if col not in exclude_cols]
         else:
             self.feature_columns = self.features
         
-        # Fit scalers
         self.scaler.fit(df[self.feature_columns])
         self.target_scaler.fit(df[[self.target_col]])
         
@@ -93,15 +86,12 @@ class Preprocessor:
         
         df = data.copy()
         
-        # Handle missing values and outliers
         df = self._handle_missing_values(df)
         df = self._handle_outliers(df)
         
-        # Scale features
         X_scaled = self.scaler.transform(df[self.feature_columns])
         y_scaled = self.target_scaler.transform(df[[self.target_col]])
         
-        # Create sequences
         X, y = [], []
         
         for i in range(len(df) - self.sequence_length - self.prediction_horizon + 1):

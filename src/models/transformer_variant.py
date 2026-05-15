@@ -1,22 +1,3 @@
-"""Alternative Transformer variant for the bonus comparison.
-
-This model differs from the baseline TransformerModel in four ways:
-
-1. **Learnable positional embeddings** (instead of fixed sinusoidal ones).
-2. **Pre-norm** encoder blocks (LayerNorm before each sub-layer, easier to
-   train and standard in modern Transformer recipes such as GPT-2, ViT).
-3. **Causal (look-ahead-masked) self-attention** so the model can never
-   peek at future days during training - the appropriate inductive bias
-   for autoregressive time-series forecasting.
-4. **Mean pooling** over the time dimension to form the prediction vector
-   (instead of using only the last position's hidden state).
-
-These are well-known knobs from the Transformer literature; together they
-make this variant materially different from `TransformerModel` while
-sharing the same input / output interface, so it can be dropped into the
-existing training and evaluation code without changes.
-"""
-
 from __future__ import annotations
 
 import torch
@@ -34,7 +15,7 @@ class CausalTransformerModel(nn.Module):
         output_size: int = 1,
         dropout: float = 0.2,
         max_seq_len: int = 256,
-        use_batch_norm: bool = False,  # kept for API symmetry; LayerNorm is used internally
+        use_batch_norm: bool = False,
     ):
         super().__init__()
         self.input_size = input_size

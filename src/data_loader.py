@@ -41,8 +41,6 @@ class StockDataLoader:
     def load_from_file(self, filepath: str) -> pd.DataFrame:
         data = pd.read_csv(filepath)
         if 'Date' in data.columns:
-            # Some cached CSVs have mixed-timezone strings (DST switch).
-            # Parse as UTC then drop the timezone for plotting/comparisons.
             data['Date'] = pd.to_datetime(data['Date'], utc=True, errors='coerce').dt.tz_localize(None)
         return data
     
@@ -60,7 +58,6 @@ class StockDataLoader:
             'outliers': {}
         }
         
-        # Check for outliers using IQR method
         numeric_cols = data.select_dtypes(include=[np.number]).columns
         for col in numeric_cols:
             Q1 = data[col].quantile(0.25)
@@ -103,30 +100,24 @@ class StockDataLoader:
     def get_features(self, data: pd.DataFrame) -> pd.DataFrame:
         df = data.copy()
         
-        # Ensure we have the required columns
         required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
         if not all(col in df.columns for col in required_cols):
             raise ValueError(f"Missing required columns. Need: {required_cols}")
         
-        # Calculate technical indicators
         df['Returns'] = df['Close'].pct_change()
         df['Log_Returns'] = np.log(df['Close'] / df['Close'].shift(1))
         df['High_Low_Ratio'] = df['High'] / df['Low']
         df['Close_Open_Ratio'] = df['Close'] / df['Open']
         
-        # Moving averages
         df['MA_5'] = df['Close'].rolling(window=5).mean()
         df['MA_10'] = df['Close'].rolling(window=10).mean()
         df['MA_20'] = df['Close'].rolling(window=20).mean()
         
-        # Volatility
         df['Volatility'] = df['Returns'].rolling(window=10).std()
         
-        # Volume features
         df['Volume_MA'] = df['Volume'].rolling(window=10).mean()
         df['Volume_Ratio'] = df['Volume'] / df['Volume_MA']
         
-        # Drop rows with NaN (from rolling calculations)
         df = df.dropna().reset_index(drop=True)
         
         return df

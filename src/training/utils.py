@@ -1,17 +1,9 @@
-"""Training utilities."""
-
 import torch
 import random
 import numpy as np
 
 
 def set_seed(seed: int = 42):
-    """
-    Set random seed for reproducibility.
-    
-    Args:
-        seed: Random seed value
-    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -21,7 +13,6 @@ def set_seed(seed: int = 42):
 
 
 class EarlyStopping:
-    """Early stopping callback to stop training when validation loss stops improving."""
     
     def __init__(
         self,
@@ -30,15 +21,6 @@ class EarlyStopping:
         restore_best_weights: bool = True,
         verbose: bool = True
     ):
-        """
-        Initialize early stopping.
-        
-        Args:
-            patience: Number of epochs to wait before stopping
-            min_delta: Minimum change to qualify as an improvement
-            restore_best_weights: Whether to restore best weights when stopping
-            verbose: Whether to print messages
-        """
         self.patience = patience
         self.min_delta = min_delta
         self.restore_best_weights = restore_best_weights
@@ -50,16 +32,6 @@ class EarlyStopping:
         self.early_stop = False
     
     def __call__(self, val_loss: float, model: torch.nn.Module) -> bool:
-        """
-        Check if training should stop.
-        
-        Args:
-            val_loss: Current validation loss
-            model: Model to save weights from
-            
-        Returns:
-            True if training should stop, False otherwise
-        """
         if val_loss < self.best_loss - self.min_delta:
             self.best_loss = val_loss
             self.counter = 0
@@ -84,11 +56,7 @@ class EarlyStopping:
         return self.early_stop
     
     def reset(self):
-        """Reset early stopping state."""
         self.best_loss = float('inf')
         self.counter = 0
         self.best_weights = None
         self.early_stop = False
-
-
-

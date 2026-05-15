@@ -26,7 +26,6 @@ class VanillaRNN(nn.Module):
         self.use_batch_norm = use_batch_norm
         self.bidirectional = bidirectional
         
-        # RNN layers
         self.rnn = nn.RNN(
             input_size=input_size,
             hidden_size=hidden_size,
@@ -36,32 +35,24 @@ class VanillaRNN(nn.Module):
             bidirectional=bidirectional
         )
         
-        # Batch normalization
         if use_batch_norm:
             self.batch_norm = nn.BatchNorm1d(hidden_size * (2 if bidirectional else 1))
         
-        # Dropout layer
         self.dropout = nn.Dropout(dropout)
         
-        # Output layer
         self.fc = nn.Linear(hidden_size * (2 if bidirectional else 1), output_size)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
-        # RNN forward pass
-        out, _ = self.rnn(x)  # out: (batch_size, seq_len, hidden_size)
+        out, _ = self.rnn(x)
         
-        # Take the last output
-        out = out[:, -1, :]  # (batch_size, hidden_size)
+        out = out[:, -1, :]
         
-        # Batch normalization
         if self.use_batch_norm:
             out = self.batch_norm(out)
         
-        # Dropout
         out = self.dropout(out)
         
-        # Fully connected layer
         out = self.fc(out)
         
         return out

@@ -1,19 +1,3 @@
-"""End-to-end pipeline for stock-price sequence modeling.
-
-The pipeline glues together:
-    - Data loading (yfinance / cached CSV)
-    - Feature engineering and inspection
-    - Preprocessing and sequence windowing
-    - Training of any of the supported models
-    - Evaluation and comparison
-
-Supported model keys (``SUPPORTED_MODELS``):
-    - ``'rnn'``                - Vanilla RNN
-    - ``'transformer'``        - Encoder-only Transformer (sinusoidal PE)
-    - ``'transformer_causal'`` - Causal Transformer variant (pre-norm,
-                                 learnable PE, masked attention, mean-pool)
-"""
-
 import os
 import json
 from typing import Dict, List, Optional, Tuple
@@ -33,7 +17,6 @@ SUPPORTED_MODELS = ('rnn', 'transformer', 'transformer_causal')
 
 
 class Pipeline:
-    """Reusable pipeline that trains and compares the supported models."""
 
     def __init__(
         self,
@@ -92,7 +75,6 @@ class Pipeline:
         end_date: str,
         use_existing: bool = True,
     ):
-        """Load stock data from cache or yfinance, then engineer features."""
         print("Loading data...")
         filepath = os.path.join(
             self.data_loader.data_dir,
@@ -118,7 +100,6 @@ class Pipeline:
         scaler_type: str = 'minmax',
         features: Optional[List[str]] = None,
     ):
-        """Scale features, create sequences, and split into train/val/test."""
         print("\nPreprocessing data...")
         self.preprocessor = Preprocessor(
             sequence_length=self.sequence_length,
@@ -142,7 +123,6 @@ class Pipeline:
         print(f"Output shape:       {self.y_train.shape}")
 
     def create_data_loaders(self) -> Tuple[DataLoader, DataLoader, DataLoader]:
-        """Build PyTorch DataLoaders for the three splits."""
         X_train_t = torch.FloatTensor(self.X_train)
         y_train_t = torch.FloatTensor(self.y_train)
         X_val_t   = torch.FloatTensor(self.X_val)
@@ -161,7 +141,6 @@ class Pipeline:
         return train_loader, val_loader, test_loader
 
     def _build_model(self, model_type: str, input_size: int, output_size: int) -> torch.nn.Module:
-        """Instantiate one of the two supported models."""
         if model_type == 'rnn':
             return VanillaRNN(
                 input_size=input_size,
@@ -172,13 +151,10 @@ class Pipeline:
                 use_batch_norm=self.use_batch_norm,
             )
         if model_type in ('transformer', 'transformer_causal'):
-            # nhead must divide d_model evenly. Pick a safe value.
             nhead = 8 if self.hidden_size % 8 == 0 else (
                 4 if self.hidden_size % 4 == 0 else 2
             )
             if model_type == 'transformer':
-                # LayerNorm is used internally; extra BatchNorm on the encoder
-                # output hurts with small test batches, so it is disabled here.
                 return TransformerModel(
                     input_size=input_size,
                     d_model=self.hidden_size,
@@ -204,11 +180,6 @@ class Pipeline:
         )
 
     def train_models(self, model_types: Optional[List[str]] = None):
-        """Train the requested models on the same data and settings.
-
-        Args:
-            model_types: subset of ('rnn', 'transformer'). Defaults to both.
-        """
         if self.preprocessor is None:
             raise ValueError("Data must be preprocessed before training")
 
@@ -270,7 +241,6 @@ class Pipeline:
                 print(f"  {metric}: {value:.6f}")
 
     def evaluate_and_compare(self):
-        """Generate the full comparison report (CSV + plots)."""
         print("\n" + "=" * 60)
         print("GENERATING COMPARISON REPORT (RNN vs TRANSFORMER)")
         print("=" * 60)
@@ -285,7 +255,6 @@ class Pipeline:
         X: np.ndarray,
         return_original_scale: bool = True,
     ) -> np.ndarray:
-        """Run inference using a trained model."""
         if model_type not in self.trainers:
             raise ValueError(
                 f"Model '{model_type}' not found. Train the model first. "

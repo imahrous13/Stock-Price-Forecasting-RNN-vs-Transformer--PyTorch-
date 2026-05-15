@@ -53,7 +53,6 @@ class ModelComparator:
        
         fig, axes = plt.subplots(1, 2, figsize=(15, 5))
         
-        # Training loss
         ax1 = axes[0]
         for model_name, result in self.results.items():
             if result['history'] and 'train_loss' in result['history']:
@@ -66,7 +65,6 @@ class ModelComparator:
         ax1.legend()
         ax1.grid(True, alpha=0.3)
         
-        # Validation loss
         ax2 = axes[1]
         for model_name, result in self.results.items():
             if result['history'] and 'val_loss' in result['history']:
@@ -103,7 +101,6 @@ class ModelComparator:
             y_true = result['y_true'].flatten()
             y_pred = result['y_pred'].flatten()
             
-            # Plot subset of data
             plot_indices = np.linspace(0, len(y_true) - 1, min(num_samples, len(y_true)), dtype=int)
             
             ax.plot(plot_indices, y_true[plot_indices], label='Actual', alpha=0.7, linewidth=2)
@@ -129,7 +126,6 @@ class ModelComparator:
       
         df = self.compare_metrics()
         
-        # Select metrics to plot
         metrics_to_plot = ['rmse', 'mae', 'mape', 'r2', 'directional_accuracy']
         available_metrics = [m for m in metrics_to_plot if m in df.columns]
         
@@ -193,22 +189,18 @@ class ModelComparator:
         print("MODEL COMPARISON REPORT")
         print("=" * 60)
         
-        # Print metrics comparison
         df = self.compare_metrics()
         print("\nMetrics Comparison:")
         print(df.to_string())
         
-        # Print individual model metrics
         for model_name, result in self.results.items():
             print_metrics(result['metrics'], model_name)
         
-        # Generate all plots
         self.plot_loss_convergence()
         self.plot_predictions()
         self.plot_metrics_comparison()
         self.plot_training_time_comparison()
         
-        # Save comparison DataFrame
         if save_path:
             df.to_csv(save_path)
             print(f"\nComparison report saved to {save_path}")

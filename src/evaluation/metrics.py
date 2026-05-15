@@ -5,11 +5,9 @@ from typing import Dict
 
 def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
 
-    # Flatten arrays if needed
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
     
-    # Remove any NaN or Inf values
     mask = np.isfinite(y_true) & np.isfinite(y_pred)
     y_true = y_true[mask]
     y_pred = y_pred[mask]
@@ -24,22 +22,16 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float
             'directional_accuracy': np.nan
         }
     
-    # Mean Squared Error
     mse = mean_squared_error(y_true, y_pred)
     
-    # Root Mean Squared Error
     rmse = np.sqrt(mse)
     
-    # Mean Absolute Error
     mae = mean_absolute_error(y_true, y_pred)
     
-    # Mean Absolute Percentage Error
     mape = np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
     
-    # R² Score
     r2 = r2_score(y_true, y_pred)
     
-    # Directional Accuracy
     if len(y_true) > 1:
         true_direction = np.diff(y_true) > 0
         pred_direction = np.diff(y_pred) > 0

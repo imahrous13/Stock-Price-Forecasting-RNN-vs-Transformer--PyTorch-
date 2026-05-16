@@ -19,11 +19,12 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("Stock Price Prediction: Vanilla RNN vs Transformer")
+st.title("Stock Price Prediction: RNN vs Transformer family")
 st.markdown(
-    "Deep Learning final project. Two models only: **Vanilla RNN** and a "
-    "**Transformer-based** sequence model. Train them on the same dataset, "
-    "compare them, and run interactive predictions."
+    "Train **Vanilla RNN**, **Transformer**, **Causal Transformer**, or "
+    "**Transformer (pretrained + fine-tuned)** on one dataset, compare metrics, "
+    "and run predictions. Pretraining pulls cached CSVs for extra symbols whose "
+    "filenames match the date range you loaded."
 )
 
 if 'pipeline' not in st.session_state:
@@ -32,6 +33,8 @@ if 'data' not in st.session_state:
     st.session_state.data = None
 if 'preprocessor' not in st.session_state:
     st.session_state.preprocessor = None
+if 'data_load_meta' not in st.session_state:
+    st.session_state.data_load_meta = None
 
 tab_data, tab_train, tab_predict, tab_results = st.tabs(
     ["Data", "Train Models", "Predict", "Comparison"]
@@ -83,6 +86,11 @@ with tab_data:
 
                 data = loader.get_features(data)
                 st.session_state.data = data
+                st.session_state.data_load_meta = {
+                    'primary_symbol': symbol.strip(),
+                    'primary_start_date': start_str,
+                    'primary_end_date': end_str,
+                }
 
                 st.success(f"Data loaded. Shape: {data.shape}")
 
@@ -108,7 +116,7 @@ with tab_data:
                 st.error(f"Error loading data: {exc}")
 
 with tab_train:
-    st.header("2. Train RNN and Transformer")
+    st.header("2. Train models")
 
     if st.session_state.data is None:
         st.warning("Load a dataset first in the **Data** tab.")
@@ -135,10 +143,26 @@ with tab_train:
             if early_stopping else int(num_epochs)
         )
 
+        pretrain_epochs = st.number_input(
+            "Pretrain max epochs (pretrained + FT Transformer)",
+            min_value=5,
+            max_value=200,
+            value=30,
+            step=5,
+        )
+        pretrain_ticker_choice = st.multiselect(
+            "Pretrain ticker universe",
+            options=["MSFT", "GOOGL", "AMZN", "META"],
+            default=["MSFT", "GOOGL"],
+            help="Used only when Transformer (pretrained + fine-tuned) is selected. "
+            "Each ticker needs SYMBOL_START_END.csv in data/raw.",
+        )
+
         model_labels = {
             "rnn": "Vanilla RNN",
             "transformer": "Transformer",
             "transformer_causal": "Causal Transformer (variant)",
+            "transformer_pretrained_ft": "Transformer (pretrained + fine-tuned)",
         }
         selected = st.multiselect(
             "Models to train",
@@ -176,9 +200,17 @@ with tab_train:
                     pipeline.preprocess_data()
                     st.session_state.preprocessor = pipeline.preprocessor
 
+                    meta = st.session_state.data_load_meta or {}
                     status.text(f"Training {len(selected)} model(s)...")
                     progress.progress(0.30)
-                    pipeline.train_models(selected)
+                    pipeline.train_models(
+                        selected,
+                        pretrain_tickers=list(pretrain_ticker_choice),
+                        pretrain_epochs=int(pretrain_epochs),
+                        primary_symbol=meta.get('primary_symbol'),
+                        primary_start_date=meta.get('primary_start_date'),
+                        primary_end_date=meta.get('primary_end_date'),
+                    )
 
                     status.text("Generating comparison report...")
                     progress.progress(0.90)
@@ -220,6 +252,7 @@ with tab_predict:
             "rnn": "Vanilla RNN",
             "transformer": "Transformer",
             "transformer_causal": "Causal Transformer (variant)",
+            "transformer_pretrained_ft": "Transformer (pretrained + fine-tuned)",
         }
         model_choice = st.selectbox(
             "Trained model",
@@ -317,7 +350,7 @@ with tab_predict:
                     st.code(traceback.format_exc())
 
 with tab_results:
-    st.header("4. RNN vs Transformer comparison")
+    st.header("4. Model comparison")
 
     pipeline = st.session_state.pipeline
     if pipeline is None or not pipeline.comparator.results:
@@ -396,7 +429,9 @@ with tab_results:
 
         st.subheader("Training time")
         fig, ax = plt.subplots(figsize=(8, 4))
-        comparison_df['training_time'].plot(kind='bar', ax=ax, color=['#4C72B0', '#DD8452'])
+        n_bars = len(comparison_df)
+        bar_colors = [plt.cm.tab10(i % 10) for i in range(n_bars)]
+        comparison_df['training_time'].plot(kind='bar', ax=ax, color=bar_colors)
         ax.set_ylabel('Seconds'); ax.set_xlabel('Model')
         ax.set_title('Training time per model'); ax.grid(True, alpha=0.3, axis='y')
         plt.tight_layout()
